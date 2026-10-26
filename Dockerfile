@@ -31,7 +31,6 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Create directory for persistent H2 database files
 RUN mkdir -p /app/data && chown -R 1000:1000 /app
 
 COPY --from=backend-builder /app/backend/target/expense-tracker-api-1.0.0.jar /app/app.jar
@@ -39,7 +38,4 @@ COPY --from=backend-builder /app/backend/target/expense-tracker-api-1.0.0.jar /a
 ENV PORT=8081
 EXPOSE 8081
 
-# Persistent volume for H2 database
-VOLUME ["/app/data"]
-
-ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "/app/app.jar"]
+ENTRYPOINT ["sh", "-c", "if [ -n \"$DATABASE_URL\" ]; then export SPRING_DATASOURCE_URL=$(echo $DATABASE_URL | sed 's/^postgres:\\/\\//jdbc:postgresql:\\/\\//' | sed 's/^postgresql:\\/\\//jdbc:postgresql:\\/\\//'); elif [ -n \"$DB_HOST\" ]; then export SPRING_DATASOURCE_URL=\"jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}\"; fi; java -Djava.security.egd=file:/dev/./urandom -jar /app/app.jar"]

@@ -1,3 +1,10 @@
+databases:
+  - name: expensedb
+    databaseName: expensedb
+    user: expenseuser
+    plan: free
+    region: oregon
+
 services:
   - type: web
     name: spendwise-expense-tracker
@@ -6,11 +13,23 @@ services:
     plan: free
     region: oregon
     envVars:
-      - key: PORT
-        value: 8081
-      - key: SERVER_PORT
-        value: 8081
-    disk:
-      name: expense-data
-      mountPath: /app/data
-      sizeGB: 1
+      - key: DB_HOST
+        fromDatabase:
+          name: expensedb
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: expensedb
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: expensedb
+          property: database
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: expensedb
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: expensedb
+          property: password
