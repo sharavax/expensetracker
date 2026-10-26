@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: spendwise-expense-tracker
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: PORT
+        value: 8081
+      - key: SERVER_PORT
+        value: 8081
+    disk:
+      name: expense-data
+      mountPath: /app/data
+      sizeGB: 1
