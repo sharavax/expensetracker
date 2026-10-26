@@ -47,7 +47,7 @@ Built with **React.js** for a sleek, responsive user interface, **Java Spring Bo
 | **Styling** | Vanilla CSS Design System | Glassmorphism, custom CSS variables, responsive design |
 | **Backend** | Java 17 + Spring Boot 3.3.4 | Spring Web, Spring Data JPA, Jakarta Bean Validation |
 | **API Documentation** | Springdoc OpenAPI / Swagger UI | Interactive API documentation at `/swagger-ui.html` |
-| **Data Storage** | H2 Persistent Database | File-based mode (`./data/expensedb.mv.db`) |
+| **Data Storage** | MySQL 8.0 / MySQL Connector/J | Persistent relational database (`expensetracker`) |
 | **HTTP Client** | Axios | REST communication with proxy configuration |
 | **Build Tools** | Apache Maven 3.9 & Node.js / npm | Standalone executable JAR & Vite pipeline |
 
@@ -55,43 +55,53 @@ Built with **React.js** for a sleek, responsive user interface, **Java Spring Bo
 
 ## 🗄️ Database Selection & Setup
 
-### Database Chosen: H2 File-Based Persistent Database
+### Database Chosen: MySQL 8.0
 
-We chose the **H2 Database Engine in Persistent File Mode**:
-- **Why?**:
-  1. **Zero External Dependencies**: Works out-of-the-box on any machine running Java without needing to install, configure, or run MySQL or PostgreSQL servers.
-  2. **Persistence Across Restarts**: Unlike in-memory databases (`jdbc:h2:mem:...`), the file mode (`jdbc:h2:file:./data/expensedb`) saves all tables and records directly to disk in `backend/data/expensedb.mv.db`. When the Spring Boot backend or computer restarts, all recorded expenses and data remain intact.
-  3. **Embedded Web Console**: Includes an integrated H2 web console for direct database inspection at `http://localhost:8081/h2-console`.
+The application is configured to use **MySQL** as its primary persistent production database:
+- **Automatic Schema Creation**: The JDBC connection string includes `createDatabaseIfNotExist=true`, which automatically creates the `expensetracker` database upon initial connection.
+- **Hibernate Auto-DDL**: Hibernate automatically creates and updates the `expenses` table schema and indexes upon startup (`spring.jpa.hibernate.ddl-auto=update`).
+- **Flexible Environment Configuration**: Database host, port, credentials, and name can be customized via standard environment variables or in `application.properties`.
 
 ### Database Configuration (`application.properties`)
 ```properties
-# Persistent H2 file-based storage
-spring.datasource.url=jdbc:h2:file:./data/expensedb;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
-spring.datasource.driverClassName=org.h2.Driver
-spring.datasource.username=sa
-spring.datasource.password=
-spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
-spring.jpa.hibernate.ddl-auto=update
+# MySQL Connection Configuration
+spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/expensetracker?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME:root}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:root}
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 
-# H2 Web Console
-spring.h2.console.enabled=true
-spring.h2.console.path=/h2-console
+# JPA & Hibernate MySQL Configuration
+spring.jpa.database-platform=org.hibernate.dialect.MySQLDialect
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.format_sql=true
 ```
 
-### Accessing the H2 Web Console
-1. Navigate to: `http://localhost:8081/h2-console`
-2. Set **JDBC URL** to: `jdbc:h2:file:./data/expensedb`
-3. Set **User Name** to: `sa` (leave password blank)
-4. Click **Connect** to view and query the `EXPENSES` table directly.
+### Manual Database Creation (Optional)
+If you prefer creating the database manually in MySQL CLI or MySQL Workbench:
+```sql
+CREATE DATABASE IF NOT EXISTS expensetracker;
+```
 
-### Switching to PostgreSQL or MySQL (Optional)
-To switch to PostgreSQL or MySQL for cloud deployments, update `application.properties`:
-```properties
-# Example PostgreSQL configuration
-spring.datasource.url=jdbc:postgresql://localhost:5432/expensedb
-spring.datasource.username=postgres
-spring.datasource.password=your_password
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+### Environment Variables
+Override default credentials when running the JAR:
+```bash
+# On Linux / macOS / Bash:
+export SPRING_DATASOURCE_URL="jdbc:mysql://localhost:3306/expensetracker?useSSL=false&serverTimezone=UTC"
+export SPRING_DATASOURCE_USERNAME="your_username"
+export SPRING_DATASOURCE_PASSWORD="your_password"
+java -jar target/expense-tracker-api-1.0.0.jar
+
+# On Windows PowerShell:
+$env:SPRING_DATASOURCE_USERNAME="root"
+$env:SPRING_DATASOURCE_PASSWORD="your_password"
+java -jar target\expense-tracker-api-1.0.0.jar
+```
+
+### Optional H2 Profile Fallback
+To run without a local MySQL server installed, activate the H2 profile:
+```bash
+java -jar target/expense-tracker-api-1.0.0.jar --spring.profiles.active=h2
 ```
 
 ---

@@ -1,17 +1,40 @@
 version: '3.8'
 
 services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: spendwise-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: expensetracker
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   expense-tracker:
     build:
       context: .
       dockerfile: Dockerfile
     image: personal-expense-tracker:latest
     container_name: spendwise-app
+    depends_on:
+      mysql-db:
+        condition: service_healthy
     ports:
       - "8081:8081"
     environment:
       - SERVER_PORT=8081
-      - SPRING_PROFILES_ACTIVE=prod
-    volumes:
-      - ./backend/data:/app/data
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/expensetracker?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
     restart: unless-stopped
+
+volumes:
+  mysql-data:
